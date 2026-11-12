@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import TradingViewWidget from './TradingViewWidget.jsx';
 import Wallet from './Wallet.jsx';
 import CryptoStats from './CryptoStats.jsx';
+import CryptoTools from './CryptoTools.jsx';
+import useStored from './useStored.js';
 
 const DEFAULTS = ['NASDAQ:AAPL', 'NASDAQ:MSFT', 'NASDAQ:NVDA', 'NASDAQ:AMZN', 'NASDAQ:GOOGL', 'NASDAQ:TSLA', 'AMEX:SPY'];
 
@@ -50,20 +52,6 @@ const coinName = s => short(s).replace(/(USDT|USD)$/, '') || short(s);
 const toPair = s => (s.includes(':') ? s : `BINANCE:${coinName(s)}USDT`);
 const CRYPTO_EXCHANGES = /^(BINANCE|COINBASE|BITSTAMP|KRAKEN|BYBIT|OKX|KUCOIN|GEMINI|CRYPTO|CRYPTOCAP):/;
 
-// useState that remembers its value in localStorage.
-function useStored(key, initial) {
-  const [value, setValue] = useState(() => {
-    try {
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : initial;
-    } catch { return initial; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  }, [key, value]);
-  return [value, setValue];
-}
-
 // New York clock and regular-session status (9:30–16:00, Mon–Fri; holidays not accounted for).
 function useMarketClock() {
   const [now, setNow] = useState(() => new Date());
@@ -104,19 +92,19 @@ function Section({ id, title, children }) {
   );
 }
 
-function Panel({ id, title, height, children }) {
+function Panel({ id, title, height, className = '', action, children }) {
   return (
-    <div className="panel" id={id} style={{ height }}>
-      <h2>{title}</h2>
+    <div className={`panel ${className}`} id={id} style={{ height }}>
+      <h2>{title}{action}</h2>
       {children}
     </div>
   );
 }
 
 // A titled panel holding a single TradingView widget.
-function WidgetPanel({ id, title, height, name, theme, config }) {
+function WidgetPanel({ id, title, height, name, theme, config, className, action }) {
   return (
-    <Panel id={id} title={title} height={height}>
+    <Panel id={id} title={title} height={height} className={className} action={action}>
       <div className="body">
         <TradingViewWidget name={name} theme={theme} config={{ ...FULL, ...config }} />
       </div>
@@ -172,7 +160,24 @@ export default function App() {
   const [active, setActive] = useStored('active', DEFAULTS[0]);
   const [theme, setTheme] = useStored('theme', 'dark');
 
+  const [chartFull, setChartFull] = useState(false);
+
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
+
+  // Opening a link such as ...#crypto should land on that section.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView();
+  }, []);
+
+  // Esc leaves the full-screen chart; the page behind it should not scroll meanwhile.
+  useEffect(() => {
+    if (!chartFull) return;
+    const onKey = e => { if (e.key === 'Escape') setChartFull(false); };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [chartFull]);
 
   const isCrypto = crypto.includes(active) || CRYPTO_EXCHANGES.test(active);
   const activeName = isCrypto ? coinName(active) : short(active);
@@ -211,7 +216,13 @@ export default function App() {
               label={short} symbols={watchlist} active={active} theme={theme}
               onAdd={add} onRemove={remove} onSelect={setActive} />
 
-            <WidgetPanel id="chart-panel" title={`Chart · ${activeName}`} height={620}
+            <WidgetPanel id="chart-panel" title={`Chart · ${activeName}`} height={chartFull ? undefined : 620}
+              className={chartFull ? 'full' : ''}
+              action={
+                <button className="panel-action" onClick={() => setChartFull(!chartFull)}>
+                  {chartFull ? 'Exit full screen (Esc)' : 'Full screen'}
+                </button>
+              }
               name="advanced-chart" theme={theme} config={{
                 autosize: true, symbol: active, interval: 'D', timezone: 'exchange',
                 theme, style: '1', allow_symbol_change: true, withdateranges: true,
@@ -241,6 +252,7 @@ export default function App() {
         <Section id="crypto" title="Crypto">
           <CryptoStats />
           <Wallet onShowChart={show} />
+          <CryptoTools />
           <div className="grid side">
             <Watchlist id="crypto-panel" title="Crypto watchlist" height={680} placeholder="Add coin, e.g. PEPE"
               label={coinName} symbols={crypto} active={active} theme={theme}
