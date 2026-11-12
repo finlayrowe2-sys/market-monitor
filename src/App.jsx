@@ -167,7 +167,7 @@ export default function App() {
   // Opening a link such as ...#crypto should land on that section.
   useEffect(() => {
     const id = window.location.hash.slice(1);
-    if (id) document.getElementById(id)?.scrollIntoView();
+    if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'instant' });
   }, []);
 
   // Esc leaves the full-screen chart; the page behind it should not scroll meanwhile.
