@@ -95,7 +95,7 @@ async function usdPrice(coinId) {
   return data[coinId]?.usd ?? null;
 }
 
-export default function Wallet({ onShowChart }) {
+export default function Wallet({ onShowChart, isPro, onUpgrade }) {
   const [mode, setMode] = useState(null); // 'wallet' | 'watch' | null
   const [address, setAddress] = useState('');
   const [chainId, setChainId] = useState(1);
@@ -155,10 +155,10 @@ export default function Wallet({ onShowChart }) {
     if (coin && !chain.test) {
       try { setPrice(await usdPrice(coin.id)); } catch { setPrice(null); }
     } else setPrice(null);
-    if (chainId === 1) {
+    if (chainId === 1 && isPro) {
       try { setTokens(await tokenBalances(address, mode === 'wallet')); } catch { setTokens([]); }
     } else setTokens([]);
-  }, [mode, address, chainId]);
+  }, [mode, address, chainId, isPro]);
 
   useEffect(() => {
     setBalance(null);
@@ -244,7 +244,7 @@ export default function Wallet({ onShowChart }) {
           <span className="hint">Read-only: this site sees the address and balance and cannot move funds.</span>
         </div>
       )}
-      {mode && tokens.length > 0 && (
+      {mode && isPro && tokens.length > 0 && (
         <div className="tokens">
           <span className="label">Tokens</span>
           {tokens.map(t => (
@@ -252,6 +252,12 @@ export default function Wallet({ onShowChart }) {
               <strong>{fmt(t.amount, t.amount < 1 ? 6 : 2)}</strong> {t.symbol}
             </span>
           ))}
+        </div>
+      )}
+      {mode && !isPro && (
+        <div className="tokens">
+          <span className="label">Tokens</span>
+          <button className="pro-inline" onClick={onUpgrade}>See token balances with Pro ★</button>
         </div>
       )}
       {error && <div className="wallet-error">{error}</div>}

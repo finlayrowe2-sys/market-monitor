@@ -119,6 +119,29 @@ td .x:hover, .alerts .x:hover { color: var(--danger); }
 .alerts li.hit { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .alerts-foot { padding: 12px 16px; }
 
+/* Pro tier */
+.upgrade-btn { background: var(--accent); color: #06130d; border-color: var(--accent); font-weight: 600; font-size: 13px; padding: 6px 12px; }
+.pro-badge { background: transparent; color: var(--accent); border-color: var(--accent); font-weight: 600; font-size: 13px; padding: 6px 12px; }
+.pro-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; vertical-align: middle; }
+.panel.locked .lock-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; }
+.panel.locked .lock-body p { margin: 0; color: var(--muted); max-width: 52ch; }
+.delay-badge { align-self: center; font-size: 12px; color: var(--danger); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.pro-inline { border: 0; background: transparent; color: var(--accent); padding: 0; font-size: 13px; }
+.pro-inline:hover { text-decoration: underline; border: 0; }
+
+/* Upgrade modal */
+.modal-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: 100%; max-width: 380px; }
+.modal-close { position: absolute; top: 12px; right: 12px; border: 0; background: transparent; color: var(--muted); font-size: 20px; padding: 4px 8px; }
+.modal-title { margin: 0 0 4px; font-size: 22px; }
+.modal-price { margin: 0 0 16px; font-size: 34px; font-weight: 700; }
+.modal-price small { font-size: 15px; font-weight: 400; color: var(--muted); }
+.modal-features { list-style: none; margin: 0 0 20px; padding: 0; }
+.modal-features li { padding: 7px 0 7px 26px; position: relative; }
+.modal-features li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+.primary.big { width: 100%; padding: 12px; font-size: 16px; }
+.modal-note { color: var(--muted); font-size: 12px; margin: 14px 0 0; line-height: 1.5; }
+
 .note { color: var(--muted); font-size: 12px; text-align: center; padding: 0 20px 24px; }
 .note a { color: inherit; }
 

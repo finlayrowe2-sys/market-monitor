@@ -3,6 +3,7 @@ import TradingViewWidget from './TradingViewWidget.jsx';
 import Wallet from './Wallet.jsx';
 import CryptoStats from './CryptoStats.jsx';
 import CryptoTools from './CryptoTools.jsx';
+import { UpgradeModal, ProLock } from './Pro.jsx';
 import useStored from './useStored.js';
 
 const DEFAULTS = ['NASDAQ:AAPL', 'NASDAQ:MSFT', 'NASDAQ:NVDA', 'NASDAQ:AMZN', 'NASDAQ:GOOGL', 'NASDAQ:TSLA', 'AMEX:SPY'];
@@ -66,7 +67,7 @@ function useMarketClock() {
   return { open, time };
 }
 
-function Header({ onToggleTheme }) {
+function Header({ isPro, onUpgrade, onToggleTheme }) {
   const { open, time } = useMarketClock();
   return (
     <header>
@@ -78,6 +79,9 @@ function Header({ onToggleTheme }) {
         {open ? '● US market open' : '○ US market closed'}
       </span>
       <span id="clock">New York {time}</span>
+      <button className={isPro ? 'pro-badge' : 'upgrade-btn'} onClick={onUpgrade}>
+        {isPro ? '★ Pro' : 'Upgrade · £3/mo'}
+      </button>
       <button onClick={onToggleTheme} title="Switch light / dark">◐</button>
     </header>
   );
@@ -161,6 +165,9 @@ export default function App() {
   const [theme, setTheme] = useStored('theme', 'dark');
 
   const [chartFull, setChartFull] = useState(false);
+  const [isPro, setIsPro] = useStored('isPro', false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const openUpgrade = () => setShowUpgrade(true);
 
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
 
@@ -202,7 +209,7 @@ export default function App() {
 
   return (
     <>
-      <Header onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
+      <Header isPro={isPro} onUpgrade={openUpgrade} onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
 
       <div id="tape">
         <TradingViewWidget name="ticker-tape" theme={theme}
@@ -219,8 +226,8 @@ export default function App() {
             <WidgetPanel id="chart-panel" title={`Chart · ${activeName}`} height={chartFull ? undefined : 620}
               className={chartFull ? 'full' : ''}
               action={
-                <button className="panel-action" onClick={() => setChartFull(!chartFull)}>
-                  {chartFull ? 'Exit full screen (Esc)' : 'Full screen'}
+                <button className="panel-action" onClick={() => (isPro ? setChartFull(!chartFull) : openUpgrade())}>
+                  {chartFull ? 'Exit full screen (Esc)' : (isPro ? 'Full screen' : 'Full screen ★')}
                 </button>
               }
               name="advanced-chart" theme={theme} config={{
@@ -250,9 +257,13 @@ export default function App() {
         </Section>
 
         <Section id="crypto" title="Crypto">
-          <CryptoStats />
-          <Wallet onShowChart={show} />
-          <CryptoTools />
+          <CryptoStats isPro={isPro} />
+          <Wallet onShowChart={show} isPro={isPro} onUpgrade={openUpgrade} />
+          {isPro
+            ? <CryptoTools />
+            : <ProLock title="Crypto portfolio & price alerts" height={200} onUpgrade={openUpgrade}>
+                Track what you hold with live profit &amp; loss, and get told when a coin hits your price. These are Pro features.
+              </ProLock>}
           <div className="grid side">
             <Watchlist id="crypto-panel" title="Crypto watchlist" height={680} placeholder="Add coin, e.g. PEPE"
               label={coinName} symbols={crypto} active={active} theme={theme}
@@ -302,6 +313,14 @@ export default function App() {
           </div>
         </Section>
       </main>
+
+      <UpgradeModal
+        open={showUpgrade}
+        isPro={isPro}
+        onClose={() => setShowUpgrade(false)}
+        onActivate={() => { setIsPro(true); setShowUpgrade(false); }}
+        onCancel={() => setIsPro(false)}
+      />
 
       <p className="note">
         Data and charts by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a>,

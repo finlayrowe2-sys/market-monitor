@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 // A strip of whole-market crypto numbers: total value, volume, dominance and the Fear & Greed index.
+// Free tier sees this data on a 30-second delay; Pro sees it as soon as it arrives.
 
 const money = n => {
   if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
@@ -8,26 +9,27 @@ const money = n => {
   return `$${Math.round(n).toLocaleString('en-US')}`;
 };
 
-export default function CryptoStats() {
+export default function CryptoStats({ isPro }) {
   const [global, setGlobal] = useState(null);
   const [mood, setMood] = useState(null);
 
   useEffect(() => {
     let alive = true;
+    const timers = [];
+    const apply = (setter, value) => {
+      if (isPro) setter(value);
+      else timers.push(setTimeout(() => { if (alive) setter(value); }, 30000));
+    };
     const load = () => {
       fetch('https://api.coingecko.com/api/v3/global')
-        .then(r => r.json())
-        .then(d => { if (alive && d.data) setGlobal(d.data); })
-        .catch(() => {});
+        .then(r => r.json()).then(d => { if (d.data) apply(setGlobal, d.data); }).catch(() => {});
       fetch('https://api.alternative.me/fng/?limit=1')
-        .then(r => r.json())
-        .then(d => { if (alive && d.data?.[0]) setMood(d.data[0]); })
-        .catch(() => {});
+        .then(r => r.json()).then(d => { if (d.data?.[0]) apply(setMood, d.data[0]); }).catch(() => {});
     };
     load();
     const id = setInterval(load, 5 * 60 * 1000);
-    return () => { alive = false; clearInterval(id); };
-  }, []);
+    return () => { alive = false; clearInterval(id); timers.forEach(clearTimeout); };
+  }, [isPro]);
 
   const change = global?.market_cap_change_percentage_24h_usd;
   const moodValue = mood ? Number(mood.value) : null;
@@ -55,6 +57,7 @@ export default function CryptoStats() {
 
   return (
     <div className="panel stats">
+      {!isPro && <span className="delay-badge" title="Upgrade to Pro for live data">● Delayed 30s</span>}
       {stats.map(s => (
         <div className="stat" key={s.label}>
           <span className="label">{s.label}</span>
